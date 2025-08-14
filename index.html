@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvoiceFlow Lite - Free Invoice Processing</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4F46E5">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 400px;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            min-height: calc(100vh - 20px);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 20px;
+            background: #F9FAFB;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4F46E5;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 5px;
+        }
+        
+        .upload-section {
+            padding: 20px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #CBD5E1;
+            border-radius: 15px;
+            padding: 30px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #F9FAFB;
+            touch-action: manipulation;
+        }
+        
+        .upload-area:hover {
+            border-color: #4F46E5;
+            background: #EEF2FF;
+        }
+        
+        .upload-area.active {
+            border-color: #4F46E5;
+            background: #EEF2FF;
+        }
+        
+        .upload-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.2s;
+            touch-action: manipulation;
+            min-height: 48px;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-secondary {
+            background: #F3F4F6;
+            color: #374151;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .invoice-list {
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .invoice-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .invoice-info h3 {
+            font-size: 14px;
+            color: #1F2937;
+            margin-bottom: 5px;
+        }
+        
+        .invoice-info p {
+            font-size: 12px;
+            color: #6B7280;
+        }
+        
+        .invoice-amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #10B981;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 3px solid #F3F4F6;
+            border-top: 3px solid #4F46E5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .preview-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .preview-content {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .extracted-data {
+            margin: 20px 0;
+        }
+        
+        .data-field {
+            margin-bottom: 15px;
+        }
+        
+        .data-field label {
+            display: block;
+            font-size: 12px;
+            color: #6B7280;
+            margin-bottom: 5px;
+        }
+        
+        .data-field input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 100;
+        }
+        
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding: 5px;
+            color: #6B7280;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .nav-item.active {
+            color: #4F46E5;
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 3px;
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+                background: white;
+            }
+            
+            .container {
+                border-radius: 0;
+                min-height: 100vh;
+                padding-bottom: 80px;
+                box-shadow: none;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .stats {
+                padding: 15px;
+                gap: 10px;
+            }
+            
+            .upload-section {
+                padding: 15px;
+            }
+            
+            .upload-area {
+                padding: 25px 15px;
+            }
+            
+            .btn {
+                padding: 18px;
+                font-size: 16px;
+                margin-top: 10px;
+            }
+            
+            .invoice-list {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 InvoiceFlow Lite</h1>
+            <p>Process invoices in seconds, not minutes</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">Total Processed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="todayCount">0</div>
+                <div class="stat-label">Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="savedTime">0h</div>
+                <div class="stat-label">Time Saved</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="accuracy">95%</div>
+                <div class="stat-label">Accuracy</div>
+            </div>
+        </div>
+        
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📸</div>
+                <h3>Upload Invoice</h3>
+                <p style="margin: 10px 0; color: #6B7280; font-size: 14px;">
+                    Take photo or select PDF/Image
+                </p>
+            </div>
+            <input type="file" id="fileInput" accept="image/*,application/pdf" capture="environment">
+            <button class="btn" id="cameraBtn">📸 Take Photo</button>
+            <button class="btn btn-secondary" id="chooseFileBtn">📁 Choose File</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; color: #6B7280;">Processing invoice...</p>
+        </div>
+        
+        <div class="invoice-list" id="invoiceList">
+            <h3 style="margin-bottom: 15px; color: #1F2937;">Recent Invoices</h3>
+            <div id="invoiceItems"></div>
+        </div>
+    </div>
+    
+    <div class="preview-modal" id="previewModal">
+        <div class="preview-content">
+            <h2 style="margin-bottom: 20px;">Review Extracted Data</h2>
+            <div class="extracted-data">
+                <div class="data-field">
+                    <label>Vendor Name</label>
+                    <input type="text" id="vendorName" placeholder="Auto-detected">
+                </div>
+                <div class="data-field">
+                    <label>Invoice Number</label>
+                    <input type="text" id="invoiceNumber" placeholder="Auto-detected">
+                </div>
+                <div class="data-field">
+                    <label>Amount</label>
+                    <input type="number" step="0.01" id="amount" placeholder="0.00">
+                </div>
+                <div class="data-field">
+                    <label>Date</label>
+                    <input type="date" id="invoiceDate">
+                </div>
+            </div>
+            <button class="btn" onclick="saveInvoice()">✓ Save Invoice</button>
+            <button class="btn btn-secondary" onclick="closePreview()">Cancel</button>
+        </div>
+    </div>
+    
+    <div class="bottom-nav">
+        <div class="nav-item active">
+            <div class="nav-icon">🏠</div>
+            <div>Home</div>
+        </div>
+        <div class="nav-item">
+            <div class="nav-icon">📊</div>
+            <div>Reports</div>
+        </div>
+        <div class="nav-item">
+            <div class="nav-icon">📁</div>
+            <div>Archive</div>
+        </div>
+        <div class="nav-item">
+            <div class="nav-icon">⚙️</div>
+            <div>Settings</div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize app
+        let invoices = JSON.parse(localStorage.getItem('invoices') || '[]');
+        let stats = JSON.parse(localStorage.getItem('stats') || '{"total": 0, "today": 0, "timesSaved": 0}');
+
+        // Update stats on load
+        updateStats();
+        displayInvoices();
+
+        // Camera button
+        document.getElementById('cameraBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').setAttribute('capture', 'environment');
+            document.getElementById('fileInput').click();
+        });
+
+        // Upload button
+        document.getElementById('chooseFileBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').removeAttribute('capture');
+            document.getElementById('fileInput').click();
+        });
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+
+        // Drag and drop
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('active');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('active');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('active');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        });
+
+        uploadArea.addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        // Handle file selection
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        // Process uploaded file
+        async function processFile(file) {
+            // Show loading
+            document.getElementById('loading').classList.add('active');
+            
+            // Convert to base64 for processing
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result;
+                
+                // Simulate OCR processing (2 seconds)
+                setTimeout(() => {
+                    // Extract text (mock OCR - in production, use real OCR API)
+                    const extractedData = mockOCR(file.name);
+                    
+                    // Hide loading
+                    document.getElementById('loading').classList.remove('active');
+                    
+                    // Show preview modal
+                    showPreview(extractedData);
+                }, 2000);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Mock OCR function (replace with real OCR API)
+        function mockOCR(filename) {
+            // Generate realistic mock data
+            const vendors = ['ABC Corp', 'XYZ Ltd', 'Tech Solutions', 'Office Supplies Co', 'Global Services'];
+            const vendor = vendors[Math.floor(Math.random() * vendors.length)];
+            const invoiceNum = 'INV-' + Math.floor(Math.random() * 10000);
+            const amount = (Math.random() * 5000 + 100).toFixed(2);
+            const date = new Date().toISOString().split('T')[0];
+            
+            return {
+                vendor: vendor,
+                invoiceNumber: invoiceNum,
+                amount: amount,
+                date: date,
+                confidence: 0.95
+            };
+        }
+
+        // Show preview modal
+        function showPreview(data) {
+            document.getElementById('vendorName').value = data.vendor;
+            document.getElementById('invoiceNumber').value = data.invoiceNumber;
+            document.getElementById('amount').value = data.amount;
+            document.getElementById('invoiceDate').value = data.date;
+            
+            document.getElementById('previewModal').classList.add('active');
+        }
+
+        // Close preview
+        function closePreview() {
+            document.getElementById('previewModal').classList.remove('active');
+        }
+
+        // Save invoice
+        function saveInvoice() {
+            const invoice = {
+                id: Date.now(),
+                vendor: document.getElementById('vendorName').value,
+                invoiceNumber: document.getElementById('invoiceNumber').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                date: document.getElementById('invoiceDate').value,
+                timestamp: new Date().toISOString(),
+                status: 'processed'
+            };
+            
+            // Add to invoices array
+            invoices.unshift(invoice);
+            
+            // Update stats
+            stats.total++;
+            stats.today++;
+            stats.timesSaved += 15; // 15 minutes saved per invoice
+            
+            // Save to localStorage
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            localStorage.setItem('stats', JSON.stringify(stats));
+            
+            // Update UI
+            updateStats();
+            displayInvoices();
+            
+            // Close modal
+            closePreview();
+            
+            // Show success message
+            showNotification('Invoice processed successfully!');
+        }
+
+        // Update statistics display
+        function updateStats() {
+            document.getElementById('totalCount').textContent = stats.total;
+            document.getElementById('todayCount').textContent = stats.today;
+            
+            // Calculate hours saved
+            const hours = Math.floor(stats.timesSaved / 60);
+            const minutes = stats.timesSaved % 60;
+            document.getElementById('savedTime').textContent = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        }
+
+        // Display invoices
+        function displayInvoices() {
+            const container = document.getElementById('invoiceItems');
+            
+            if (invoices.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #9CA3AF;">No invoices yet. Upload your first invoice!</p>';
+                return;
+            }
+            
+            container.innerHTML = invoices.slice(0, 5).map(invoice => `
+                <div class="invoice-item">
+                    <div class="invoice-info">
+                        <h3>${invoice.vendor}</h3>
+                        <p>${invoice.invoiceNumber} • ${formatDate(invoice.date)}</p>
+                    </div>
+                    <div class="invoice-amount">$${invoice.amount.toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Show notification
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #10B981;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 10px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 2000;
+                animation: slideDown 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Service Worker Registration for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then(registration => {
+                console.log('ServiceWorker registered');
+            }).catch(err => {
+                console.log('ServiceWorker registration failed');
+            });
+        }
+
+        // Install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button after 5 seconds
+            setTimeout(() => {
+                if (deferredPrompt) {
+                    showInstallPrompt();
+                }
+            }, 5000);
+        });
+
+        function showInstallPrompt() {
+            const prompt = document.createElement('div');
+            prompt.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                left: 20px;
+                right: 20px;
+                background: white;
+                padding: 20px;
+                border-radius: 15px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                z-index: 1000;
+                text-align: center;
+            `;
+            prompt.innerHTML = `
+                <h3 style="margin-bottom: 10px;">Install InvoiceFlow</h3>
+                <p style="color: #6B7280; margin-bottom: 15px; font-size: 14px;">Add to home screen for quick access</p>
+                <button onclick="installApp()" class="btn" style="margin-top: 0;">Install</button>
+                <button onclick="this.parentElement.remove()" style="
+                    background: none;
+                    border: none;
+                    color: #6B7280;
+                    margin-top: 10px;
+                    cursor: pointer;
+                ">Maybe later</button>
+            `;
+            document.body.appendChild(prompt);
+        }
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // Reset stats daily
+        function resetDailyStats() {
+            const lastReset = localStorage.getItem('lastReset');
+            const today = new Date().toDateString();
+            
+            if (lastReset !== today) {
+                stats.today = 0;
+                localStorage.setItem('stats', JSON.stringify(stats));
+                localStorage.setItem('lastReset', today);
+            }
+        }
+
+        // Run daily reset check
+        resetDailyStats();
+    </script>
+</body>
+</html>
